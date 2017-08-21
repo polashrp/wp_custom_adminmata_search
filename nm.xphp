@@ -1,0 +1,73 @@
+<?php
+/*
+Plugin Name: NM Admin Filter BY Custom Fields
+Plugin URI: #
+Description: Filter posts or pages in admin by custom fields (post meta)
+Version: 1.0
+Author: Habib
+Author URI: #
+*/
+
+add_action( 'admin_init','nm_namespace');
+function nm_namespace() {
+    wp_register_style('nm_namespace', plugins_url('css/new-style.css',__FILE__ ));
+    wp_enqueue_style('nm_namespace');
+    wp_register_script( 'nm_namespace', plugins_url('custom-jquery.js',__FILE__ ));
+    wp_enqueue_script('nm_namespace');
+}
+
+
+
+add_filter( 'parse_query', 'ba_admin_posts_filter' );
+add_action( 'restrict_manage_posts', 'ba_admin_posts_filter_restrict_manage_posts' );
+
+function ba_admin_posts_filter( $query )
+{
+    global $pagenow;
+    if ( is_admin() && $pagenow=='edit.php' && isset($_GET['admin_filter_fields_name']) && $_GET['admin_filter_fields_name'] != '') {
+        $query->query_vars['meta_key'] = $_GET['admin_filter_fields_name'];
+    if (isset($_GET['admin_filter_fields_value']) && $_GET['admin_filter_fields_value'] != '')
+        $query->query_vars['meta_value'] = $_GET['admin_filter_fields_value'];
+    }
+}
+
+function ba_admin_posts_filter_restrict_manage_posts()
+{
+    global $wpdb;
+
+    $sql = 'SELECT DISTINCT meta_key FROM '.$wpdb->postmeta.' ORDER BY 1';
+
+
+    $fields = $wpdb->get_results($sql, ARRAY_N);
+?>
+<select class="js-example-basic-multiple" multiple="multiple"  name="admin_filter_fields_name">
+<option value=""><?php _e('Filter By Custom Fields', 'baapf'); ?></option>
+<?php
+    $current = isset($_GET['admin_filter_fields_name'])? $_GET['admin_filter_fields_name']:'';
+    $current_v = isset($_GET['admin_filter_fields_value'])? $_GET['admin_filter_fields_value']:'';
+    foreach ($fields as $field) {
+
+        if (substr($field[0],0,1) != "_"){
+        printf
+            (
+                '<option value="%s"%s>%s</option>',
+                $field[0],
+                $field[0] == $current? ' selected="selected"':'',
+                $field[0]
+            );
+        }
+    }
+
+    
+?>
+</select> <?php _e('Value:', 'baapf'); ?><input type="TEXT" name="admin_filter_fields_value" value="<?php echo $current_v; ?>" /><input type="submit" value="Search">
+<?php
+}
+
+?>
+
+<script type="text/javascript">
+
+$(".js-example-basic-multiple").select2();
+
+</script>
